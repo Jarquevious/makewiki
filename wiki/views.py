@@ -7,7 +7,7 @@ from wiki.forms import PageForm
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.urls import reverse, reverse_lazy
-from django.utils.text import slugify
+# from django.utils.text import slugify
 
 class PageListView(ListView):
     """ Renders a list of all Pages. """
@@ -27,45 +27,27 @@ class PageDetailView(DetailView):
     def get(self, request, slug):
         """ Returns a specific wiki page by slug. """
         page = self.get_queryset().get(slug__iexact=slug)
+        form = PageForm(instance = page)
         return render(request, 'page.html', {
-          'page': page,
-          'form': PageForm()
+          'page': page, 'form': form
         })
 
-    def post(self, request, slug, *args, **kwargs):
+    def post(self, request, slug):
+
+        page = self.get_queryset().get(slug__iexact=slug)
         form = PageForm(request.POST)
-        
-        if form.is_valid:
-            Page = self.get_queryset().get(slug__iexact=slug)
-            Page.title = request.POST['title']
-            Page.content = request.POST['content']
-            Page.modified = datetime.now()
-            Page.slug = slugify(Page.title, allow_unicode=True)
-            Page.author = request.user
-            Page.save()
-            return HttpResponseRedirect(
-                reverse('wiki-details-page', args=[Page.slug]))
-        # else if form is not valid
-        return render(request, 'page.html', { 'form': form })
+        page.title = request.POST['title']
+        page.content = request.POST['content']
+        page.save()
+        context = {
+          'page': page,
+          'form': form,
+        }
+        return HttpResponseRedirect(reverse('wiki-details-page', args=[page.slug]))
+
 
 class PageCreateView(CreateView):
-
-    def get(self, request, *args, **kwargs):
-        context = {
-          'form': PageForm()
-        }
-        return render(request, 'create.html', context)
-
-    def post(self, request, *args, **kwargs):
-        form = PageForm(request.POST)
-
-
-        if form.is_valid:
-            Page = form.save(commit=False) # don't save the question yet
-            Page.author = request.user
-            Page.save()
-            return HttpResponseRedirect(
-                reverse('wiki-details-page', args=[Page.slug]))
-        # else if form is not valid
-        return render(request, 'create.html', { 'form': form })
+    model = Page
+    fields = ['title', 'content', 'author']
+    template_name = 'create.html'
 
