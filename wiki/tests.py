@@ -53,4 +53,26 @@ def test_edit_page(self):
 
     self.assertQuerysetEqual(result, ['<Page: My Test Page>', '<Page: Test>'], ordered=False)
 
-    
+def test_page_creation(self):
+
+    # Create user object and save it
+    user = User.objects.create()
+    user.save()
+
+    # Create a page 
+    page = Page.objects.create(title="The Test Page", content="edit_test", author=user)
+    page.save()
+
+    post_data = {
+    'title': 'COVID19', 
+    'content': 'Mass Testing is Underway', 
+    'author': user.id 
+    }
+
+    response = self.client.post('/form/', data = post_data)
+
+    self.assertEqual(response.status_code, 302)
+
+    page_object = Page.objects.get(title='COVID19')
+
+    self.assertEqual(page_object.content, 'Mass Testing is Underway')
