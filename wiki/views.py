@@ -1,9 +1,13 @@
 from django.shortcuts import render
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
-
+from django.views.generic.edit import CreateView
 from wiki.models import Page
-
+from wiki.forms import PageForm
+from django.contrib.auth.models import User
+from django.http import HttpResponseRedirect
+from django.urls import reverse, reverse_lazy
+from django.utils.text import slugify
 
 class PageListView(ListView):
     """ Renders a list of all Pages. """
@@ -24,5 +28,44 @@ class PageDetailView(DetailView):
         """ Returns a specific wiki page by slug. """
         page = self.get_queryset().get(slug__iexact=slug)
         return render(request, 'page.html', {
-          'page': page
+          'page': page,
+          'form': PageForm()
         })
+
+    def post(self, request, slug, *args, **kwargs):
+        form = PageForm(request.POST)
+        
+        if form.is_valid:
+            Page = self.get_queryset().get(slug__iexact=slug)
+            Page.title = request.POST['title']
+            Page.content = request.POST['content']
+            Page.modified = datetime.now()
+            Page.slug = slugify(Page.title, allow_unicode=True)
+            Page.author = request.user
+            Page.save()
+            return HttpResponseRedirect(
+                reverse('wiki-details-page', args=[Page.slug]))
+        # else if form is not valid
+        return render(request, 'page.html', { 'form': form })
+
+class PageCreateView(CreateView):
+
+    def get(self, request, *args, **kwargs):
+        context = {
+          'form': PageForm()
+        }
+        return render(request, 'create.html', context)
+
+    def post(self, request, *args, **kwargs):
+        form = PageForm(request.POST)
+
+
+        if form.is_valid:
+            Page = form.save(commit=False) # don't save the question yet
+            Page.author = request.user
+            Page.save()
+            return HttpResponseRedirect(
+                reverse('wiki-details-page', args=[Page.slug]))
+        # else if form is not valid
+        return render(request, 'create.html', { 'form': form })
+

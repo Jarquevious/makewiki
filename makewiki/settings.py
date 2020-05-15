@@ -37,8 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    'wiki'
+    'wiki.apps.WikiConfig',
+    'accounts.apps.AccountsConfig',
 ]
 
 MIDDLEWARE = [
@@ -146,3 +146,8 @@ try:
     from makewiki.local_settings import *
 except ImportError:
     pass
+
+STATICFILES_DIRS = [
+     os.path.join(BASE_DIR, "static"),
+ ]
+
